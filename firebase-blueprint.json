@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated researcher profile isolated to the owner.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "createdAt", "updatedAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "Saved archive breakdown or checklist owned by a researcher.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "docId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "enum": ["L1 ARCHITECTURE", "CHECKLIST", "BRIEF", "TOKENOMICS"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "docId", "title", "category", "createdAt"]
+    },
+    "ProtocolAudit": {
+      "title": "ProtocolAudit",
+      "description": "3-Step Filter protocol evaluation saved by an authenticated researcher.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "protocolName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "incentivesScore": {
+          "type": "number"
+        },
+        "loadScore": {
+          "type": "number"
+        },
+        "usageScore": {
+          "type": "number"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": ["SIGNAL", "CAUTION", "TOXIC"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "protocolName",
+        "incentivesScore",
+        "loadScore",
+        "usageScore",
+        "verdict",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile documents keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/bookmarks/{docId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "User-saved research archive bookmarks."
+    },
+    "/users/{userId}/audits/{auditId}": {
+      "schema": { "$ref": "#/entities/ProtocolAudit" },
+      "description": "User-authored 3-Step protocol toxicology audits."
+    }
+  }
+}

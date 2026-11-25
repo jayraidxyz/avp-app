@@ -1,0 +1,8 @@
+{
+  "name": "Toxicology Archive",
+  "description": "Web3 research archive, 3-step protocol filter, Solana 1.0 interactive 3D breakdown, and signal-over-noise vault.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

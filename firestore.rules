@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBookmark(data, userId, docId) {
+      return data.keys().hasAll(['userId', 'docId', 'title', 'category', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'docId', 'title', 'category', 'createdAt'])
+        && data.userId is string && data.userId == userId && isValidId(data.userId)
+        && data.docId is string && data.docId == docId && data.docId.size() <= 64 && isValidId(data.docId)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && data.category in ['L1 ARCHITECTURE', 'CHECKLIST', 'BRIEF', 'TOKENOMICS']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidProtocolAudit(data, userId) {
+      return data.keys().hasAll([
+          'userId', 'protocolName', 'incentivesScore', 'loadScore',
+          'usageScore', 'verdict', 'notes', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'protocolName', 'incentivesScore', 'loadScore',
+          'usageScore', 'verdict', 'notes', 'createdAt', 'updatedAt'
+        ])
+        && data.userId is string && data.userId == userId && isValidId(data.userId)
+        && data.protocolName is string && data.protocolName.size() >= 1 && data.protocolName.size() <= 80
+        && data.incentivesScore is number && data.incentivesScore >= 0 && data.incentivesScore <= 10
+        && data.loadScore is number && data.loadScore >= 0 && data.loadScore <= 10
+        && data.usageScore is number && data.usageScore >= 0 && data.usageScore <= 10
+        && data.verdict in ['SIGNAL', 'CAUTION', 'TOXIC']
+        && data.notes is string && data.notes.size() <= 2000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Private User Profiles (PII isolated to owner)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoURL', 'updatedAt']);
+      allow delete: if false;
+
+      // Saved Archive Bookmarks (Master Gate verifies parent user profile exists)
+      match /bookmarks/{docId} {
+        allow get: if isValidId(userId) && isValidId(docId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(docId)
+          && isOwner(userId)
+          && isValidBookmark(incoming(), userId, docId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if false;
+        allow delete: if isVerifiedUser() && isValidId(userId) && isValidId(docId) && isOwner(userId);
+      }
+
+      // 3-Step Protocol Audits (Master Gate + Action-Based Updates)
+      match /audits/{auditId} {
+        allow get: if isValidId(userId) && isValidId(auditId) && isOwner(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(auditId)
+          && isOwner(userId)
+          && isValidProtocolAudit(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(auditId)
+          && isOwner(userId)
+          && isValidProtocolAudit(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'protocolName', 'incentivesScore', 'loadScore', 'usageScore', 'verdict', 'notes', 'updatedAt'
+          ])
+          && exists(/databases/$(database)/documents/users/$(userId));
+        allow delete: if isVerifiedUser() && isValidId(userId) && isValidId(auditId) && isOwner(userId);
+      }
+    }
+  }
+}
