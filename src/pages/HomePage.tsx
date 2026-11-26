@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Bookmark, Play, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Bookmark, Compass, Play, ShieldCheck } from 'lucide-react';
 import { ASSETS } from '../tokens';
 import {
   ARCHIVE_DOCUMENTS,
@@ -12,13 +12,14 @@ import { CrownIcon } from '../components/ui/CrownIcon';
 import { ActionButton } from '../components/ui/ActionButton';
 import { MascotMoment } from '../components/ui/MascotMoment';
 
-export type AppRoute = 'home' | 'archive' | 'three-step' | 'solana' | 'partners';
+export type AppRoute = 'home' | 'archive' | 'three-step' | 'lab' | 'partners';
 
 interface HomePageProps {
   bookmarkedIds: Set<string>;
   onToggleBookmark: (doc: ArchiveDoc) => void;
   onOpenDoc: (doc: ArchiveDoc) => void;
   onNavigate: (route: AppRoute) => void;
+  onOpenGuide?: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -26,6 +27,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onToggleBookmark,
   onOpenDoc,
   onNavigate,
+  onOpenGuide,
 }) => {
   const latestDocs = ARCHIVE_DOCUMENTS.slice(0, 3);
 
@@ -59,13 +61,19 @@ export const HomePage: React.FC<HomePageProps> = ({
               </p>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <ActionButton variant="primary" onClick={() => onNavigate('solana')}>
+                <ActionButton variant="primary" onClick={() => onNavigate('lab')}>
                   <Play className="w-4 h-4 fill-current" />
                   Watch Breakdown
                 </ActionButton>
                 <ActionButton variant="secondary" onClick={() => onNavigate('archive')}>
                   Explore Vault
                 </ActionButton>
+                {onOpenGuide && (
+                  <ActionButton variant="ghost" onClick={onOpenGuide}>
+                    <Compass className="w-4 h-4 text-[#FF554A]" />
+                    <span>How to Navigate</span>
+                  </ActionButton>
+                )}
               </div>
             </div>
 
@@ -106,7 +114,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {THREE_STEP_PILLARS.map((step) => {
             const targetRoute: AppRoute =
-              step.num === '01' ? 'three-step' : step.num === '02' ? 'archive' : 'solana';
+              step.num === '01' ? 'three-step' : step.num === '02' ? 'archive' : 'lab';
 
             return (
               <button
@@ -205,13 +213,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </section>
 
-        {/* Solana 1.0 Interactive Spotlight & Partners */}
-        <section aria-labelledby="solana-preview-heading" className="lg:col-span-5 space-y-4">
+        {/* Diagnostic Lab Interactive Spotlight & Partners */}
+        <section aria-labelledby="lab-preview-heading" className="lg:col-span-5 space-y-4">
           <h2
-            id="solana-preview-heading"
+            id="lab-preview-heading"
             className="font-heading font-bold text-sm sm:text-base uppercase tracking-wider text-[#A3A3A3]"
           >
-            Solana 1.0 Breakdown
+            Diagnostic Lab
           </h2>
 
           <ClayCard className="p-5 space-y-4">
@@ -219,47 +227,47 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="flex items-center gap-2">
                 <CrownIcon className="w-5 h-5" glow />
                 <span className="font-heading font-bold text-base text-white">
-                  55s Interactive 3D Tour
+                  5-Stage 3D Token Scanner
                 </span>
               </div>
               <span className="text-xs font-heading font-bold text-[#FF554A] tabular-nums">
-                Step 1 of 3
+                Live Data
               </span>
             </div>
 
-            {/* 3-Step Mini Progress Rail */}
+            {/* 5-Stage Mini Progress Rail */}
             <div className="space-y-2">
               <div className="h-1.5 w-full rounded-full bg-[#161616] overflow-hidden">
-                <div className="h-full w-1/3 bg-[#E10000] rounded-full" />
+                <div className="h-full w-3/5 bg-[#E10000] rounded-full" />
               </div>
               <div className="flex justify-between text-xs text-[#A3A3A3]">
-                <span className="text-white font-medium">01 Incentives</span>
-                <span>02 Load</span>
-                <span>03 Real Usage</span>
+                <span className="text-white font-medium">01 Identity</span>
+                <span>02–03 Safety &amp; LP</span>
+                <span>04–05 Flow</span>
               </div>
             </div>
 
             <ul className="space-y-2 text-sm text-[#A3A3A3]">
               <li className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#FF554A] shrink-0" />
-                <span>50% base fee burn &amp; priority fee routing</span>
+                <span>Mint/freeze authority &amp; EVM contract checks</span>
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#FF554A] shrink-0" />
-                <span>Proof of History + Sealevel 3D core</span>
+                <span>LP lock ratio, top-10 concentration &amp; flow</span>
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#FF554A] shrink-0" />
-                <span>Organic settlement &amp; DEX velocity</span>
+                <span>Live news headlines &amp; official link resolver</span>
               </li>
             </ul>
 
             <ActionButton
               variant="secondary"
               className="w-full"
-              onClick={() => onNavigate('solana')}
+              onClick={() => onNavigate('lab')}
             >
-              Launch 3D Breakdown
+              Open Diagnostic Lab
             </ActionButton>
           </ClayCard>
 

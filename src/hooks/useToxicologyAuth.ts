@@ -41,11 +41,8 @@ export function useToxicologyAuth() {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [audits, setAudits] = useState<SavedAudit[]>([]);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
-
-  useEffect(() => {
-    testFirestoreConnection();
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -59,6 +56,7 @@ export function useToxicologyAuth() {
         return;
       }
 
+      await testFirestoreConnection(firebaseUser.uid);
       const userRef = doc(db, 'users', firebaseUser.uid);
       try {
         const snap = await getDoc(userRef);
@@ -162,11 +160,24 @@ export function useToxicologyAuth() {
 
   const signIn = useCallback(async () => {
     setAuthError(null);
+    setSigningIn(true);
     try {
       await signInWithGooglePopup();
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Google Sign-In failed.';
-      setAuthError(msg);
+      const code =
+        error && typeof error === 'object' && 'code' in error
+          ? String((error as { code?: string }).code)
+          : '';
+      if (code === 'auth/popup-closed-by-user') {
+        setAuthError('Google sign-in window was closed before completing.');
+      } else if (code === 'auth/popup-blocked') {
+        setAuthError('Sign-in popup was blocked by your browser. Allow popups and try again.');
+      } else {
+        const msg = error instanceof Error ? error.message : 'Google Sign-In failed.';
+        setAuthError(msg);
+      }
+    } finally {
+      setSigningIn(false);
     }
   }, []);
 
@@ -250,6 +261,7 @@ export function useToxicologyAuth() {
     bookmarkedIds,
     audits,
     authError,
+    signingIn,
     syncLoading,
     signIn,
     logout,

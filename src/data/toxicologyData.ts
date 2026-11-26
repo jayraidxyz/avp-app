@@ -211,9 +211,9 @@ export const THREE_STEP_PILLARS: ThreeStepPillar[] = [
   {
     num: '03',
     id: 'usage',
-    title: 'Solana 1.0: Real Usage',
-    shortTitle: 'Solana 1.0',
-    subtitle: '55s interactive breakdown',
+    title: 'Diagnostic Lab: Real Usage',
+    shortTitle: 'Diagnostic Lab',
+    subtitle: '5-stage live 3D telemetry',
     summary:
       'Separate genuine human settlement, stablecoin velocity, and retained builders from bot spam and sybil wallets.',
     checks: [

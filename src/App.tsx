@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Archive, Home, Layers, LogOut, Play, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Archive, Compass, Home, Layers, LogIn, LogOut, Play, Users } from 'lucide-react';
 import { ASSETS } from './tokens';
 import { ArchiveDoc } from './data/toxicologyData';
 import { useToxicologyAuth } from './hooks/useToxicologyAuth';
@@ -12,17 +12,18 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CrownIcon } from './components/ui/CrownIcon';
 import { ActionButton } from './components/ui/ActionButton';
 import { DocumentReaderModal } from './components/DocumentReaderModal';
+import { NavigationGuideModal } from './components/NavigationGuideModal';
 import { AppRoute, HomePage } from './pages/HomePage';
 import { ArchivePage } from './pages/ArchivePage';
 import { ThreeStepPage } from './pages/ThreeStepPage';
-import { SolanaPage } from './pages/SolanaPage';
+import { DiagnosticLabPage } from './pages/DiagnosticLabPage';
 import { PartnersPage } from './pages/PartnersPage';
 
 const DESKTOP_NAV: { id: AppRoute; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'archive', label: 'Archive' },
   { id: 'three-step', label: '3-Step' },
-  { id: 'solana', label: 'Solana 1.0' },
+  { id: 'lab', label: 'Lab' },
   { id: 'partners', label: 'Partners' },
 ];
 
@@ -37,16 +38,20 @@ const MOBILE_TABS: {
   { id: 'partners', label: 'Partners', Icon: Users },
 ];
 
+const GUIDE_SEEN_KEY = 'toxicology_nav_guide_seen_v1';
+
 function ToxicologyShell() {
   const [route, setRoute] = useState<AppRoute>('home');
   const [selectedDoc, setSelectedDoc] = useState<ArchiveDoc | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const {
     user,
     bookmarkedIds,
     audits,
     authError,
+    signingIn,
     syncLoading,
     signIn,
     logout,
@@ -54,6 +59,27 @@ function ToxicologyShell() {
     saveAudit,
     deleteAudit,
   } = useToxicologyAuth();
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(GUIDE_SEEN_KEY) !== '1') {
+        setGuideOpen(true);
+      }
+    } catch {
+      setGuideOpen(true);
+    }
+  }, []);
+
+  const handleCloseGuide = (dontShowAgain: boolean) => {
+    setGuideOpen(false);
+    try {
+      if (dontShowAgain) {
+        localStorage.setItem(GUIDE_SEEN_KEY, '1');
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  };
 
   const navigate = (next: AppRoute) => {
     setRoute(next);
@@ -71,10 +97,10 @@ function ToxicologyShell() {
             type="button"
             onClick={() => navigate('home')}
             aria-label="Toxicology Archive Home"
-            className="min-h-[44px] flex items-center gap-2 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF554A] rounded-lg px-1"
+            className="min-h-[44px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF554A] rounded-lg px-1"
           >
             <CrownIcon className="w-5 h-5 sm:w-6 sm:h-6" glow />
-            <span className="font-heading font-bold text-sm sm:text-base tracking-tight text-white">
+            <span className="font-heading font-bold text-xs sm:text-base tracking-tight text-white">
               TOXICOLOGY
             </span>
           </button>
@@ -100,39 +126,60 @@ function ToxicologyShell() {
             })}
           </nav>
 
-          {/* Right Action Zone: Never clipped Watch Breakdown CTA + Red-Ring Avatar */}
-          <div className="flex items-center gap-2 shrink-0 relative">
+          {/* Right Action Zone: Guide button (sm+), Watch Breakdown CTA, Visible Sign In / Account */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative">
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              aria-label="Open app navigation guide"
+              className="hidden sm:inline-flex min-h-[44px] px-3 rounded-full bg-[#161616] border border-[#2A2A2A] hover:border-white text-xs font-heading font-bold text-[#D4D4D4] hover:text-white items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF554A]"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#FF554A]" />
+              <span>Guide</span>
+            </button>
+
             <ActionButton
               variant="primary"
               size="compact"
-              onClick={() => navigate('solana')}
-              className="px-3 sm:px-4"
+              onClick={() => navigate('lab')}
+              className="px-2.5 sm:px-4"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>Watch Breakdown</span>
             </ActionButton>
 
-            <button
-              type="button"
-              onClick={() => {
-                if (user) {
-                  setAccountMenuOpen((prev) => !prev);
-                } else {
-                  signIn();
-                }
-              }}
-              aria-label={user ? 'Open researcher account menu' : 'Sign in with Google'}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF554A]"
-            >
-              <span className="w-9 h-9 rounded-full p-[2px] bg-[#050505] ring-2 ring-[#E10000] overflow-hidden block">
-                <img
-                  src={user?.photoURL || ASSETS.mascotAvatar}
-                  alt={user ? `${user.displayName || 'Researcher'} avatar` : 'Sign in avatar'}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full rounded-full object-cover"
-                />
-              </span>
-            </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setAccountMenuOpen((prev) => !prev)}
+                aria-label="Open researcher account menu"
+                aria-expanded={accountMenuOpen}
+                className="min-h-[44px] px-1.5 sm:pr-3 flex items-center gap-2 rounded-full bg-[#161616] border border-[#2A2A2A] hover:border-[#E10000] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF554A]"
+              >
+                <span className="w-8 h-8 rounded-full p-[2px] bg-[#050505] ring-2 ring-[#E10000] overflow-hidden block shrink-0">
+                  <img
+                    src={user.photoURL || ASSETS.mascotAvatar}
+                    alt={`${user.displayName || 'Researcher'} avatar`}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </span>
+                <span className="hidden sm:inline text-xs font-heading font-bold text-white max-w-[90px] truncate">
+                  {user.displayName?.split(' ')[0] || 'Account'}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={signIn}
+                disabled={signingIn}
+                aria-label="Sign in with Google"
+                className="min-h-[44px] px-2.5 sm:px-3.5 rounded-full bg-[#161616] border-[1.5px] border-[#E10000]/80 hover:border-[#E10000] hover:bg-[#1E1E1E] text-xs sm:text-sm font-heading font-bold text-white inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF554A] disabled:opacity-60"
+              >
+                <LogIn className="w-3.5 h-3.5 text-[#FF554A] shrink-0" />
+                <span>{signingIn ? 'Signing in...' : 'Sign in'}</span>
+              </button>
+            )}
 
             {accountMenuOpen && user && (
               <div
@@ -190,6 +237,7 @@ function ToxicologyShell() {
             onToggleBookmark={toggleBookmark}
             onOpenDoc={setSelectedDoc}
             onNavigate={navigate}
+            onOpenGuide={() => setGuideOpen(true)}
           />
         )}
         {route === 'archive' && (
@@ -198,7 +246,7 @@ function ToxicologyShell() {
             syncLoading={syncLoading}
             onToggleBookmark={toggleBookmark}
             onOpenDoc={setSelectedDoc}
-            onOpenSolana={() => navigate('solana')}
+            onOpenLab={() => navigate('lab')}
           />
         )}
         {route === 'three-step' && (
@@ -210,7 +258,7 @@ function ToxicologyShell() {
             onSignIn={signIn}
           />
         )}
-        {route === 'solana' && <SolanaPage />}
+        {route === 'lab' && <DiagnosticLabPage onOpenGuide={() => setGuideOpen(true)} />}
         {route === 'partners' && <PartnersPage />}
       </main>
 
@@ -222,7 +270,7 @@ function ToxicologyShell() {
         <div className="h-[56px] max-w-md mx-auto grid grid-cols-4 items-center">
           {MOBILE_TABS.map((tab) => {
             const active =
-              route === tab.id || (route === 'solana' && tab.id === 'three-step');
+              route === tab.id || (route === 'lab' && tab.id === 'three-step');
             const TabIcon = tab.Icon;
 
             return (
@@ -263,7 +311,18 @@ function ToxicologyShell() {
         isBookmarked={selectedDoc ? bookmarkedIds.has(selectedDoc.id) : false}
         onToggleBookmark={toggleBookmark}
         onClose={() => setSelectedDoc(null)}
-        onOpenSolana3D={() => navigate('solana')}
+        onOpenLab={() => navigate('lab')}
+      />
+
+      {/* Interactive 3D & App Navigation Guide Popup */}
+      <NavigationGuideModal
+        open={guideOpen}
+        isSignedIn={Boolean(user)}
+        signingIn={signingIn}
+        userEmail={user?.email}
+        onClose={handleCloseGuide}
+        onNavigate={navigate}
+        onSignIn={signIn}
       />
     </div>
   );

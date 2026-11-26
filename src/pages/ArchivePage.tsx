@@ -11,7 +11,7 @@ interface ArchivePageProps {
   syncLoading: boolean;
   onToggleBookmark: (doc: ArchiveDoc) => void;
   onOpenDoc: (doc: ArchiveDoc) => void;
-  onOpenSolana: () => void;
+  onOpenLab: () => void;
 }
 
 type FilterOption = 'ALL' | 'SAVED' | ArchiveCategory;
@@ -30,7 +30,7 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({
   syncLoading,
   onToggleBookmark,
   onOpenDoc,
-  onOpenSolana,
+  onOpenLab,
 }) => {
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterOption>('ALL');
@@ -68,7 +68,7 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({
           </p>
         </div>
 
-        <ActionButton variant="primary" onClick={onOpenSolana}>
+        <ActionButton variant="primary" onClick={onOpenLab}>
           Watch Breakdown
         </ActionButton>
       </div>

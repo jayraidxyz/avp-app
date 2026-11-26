@@ -9,7 +9,7 @@ interface DocumentReaderModalProps {
   isBookmarked: boolean;
   onToggleBookmark: (doc: ArchiveDoc) => void;
   onClose: () => void;
-  onOpenSolana3D?: () => void;
+  onOpenLab?: () => void;
 }
 
 export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
@@ -17,7 +17,7 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
   isBookmarked,
   onToggleBookmark,
   onClose,
-  onOpenSolana3D,
+  onOpenLab,
 }) => {
   useEffect(() => {
     if (!doc) return;
@@ -107,15 +107,15 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
         </div>
 
         <div className="pt-4 border-t border-[#2A2A2A] flex flex-wrap items-center justify-between gap-3">
-          {doc.id === 'solana-1-0-architecture' && onOpenSolana3D ? (
+          {onOpenLab ? (
             <ActionButton
               variant="primary"
               onClick={() => {
                 onClose();
-                onOpenSolana3D();
+                onOpenLab();
               }}
             >
-              Open 55s 3D Breakdown
+              Open Diagnostic Lab
             </ActionButton>
           ) : (
             <ActionButton variant="secondary" onClick={onClose}>

@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
+import { doc, getDocFromServer, getFirestore, setLogLevel } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
+setLogLevel('error');
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
@@ -60,13 +61,15 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-export async function testFirestoreConnection(): Promise<boolean> {
+export async function testFirestoreConnection(uid?: string): Promise<boolean> {
+  if (!uid) {
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+  }
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    await getDocFromServer(doc(db, 'users', uid));
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
       return false;
     }
     return true;
